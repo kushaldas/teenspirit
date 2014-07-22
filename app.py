@@ -2,6 +2,8 @@ import os
 from flask import Flask, request, redirect, url_for
 from werkzeug.utils import secure_filename
 from werkzeug.wsgi import SharedDataMiddleware
+from retask.queue import Queue
+from retask.task import Task
 
 
 UPLOAD_FOLDER = './uploads'
@@ -14,7 +16,7 @@ APP.add_url_rule('/uploads/<filename>', 'uploaded_file',
 APP.wsgi_app = SharedDataMiddleware(APP.wsgi_app, {
     '/uploads':  APP.config['UPLOAD_FOLDER']
 })
-
+APP.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -27,6 +29,11 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(APP.config['UPLOAD_FOLDER'], filename))
+            # Now add the information in the queue for processing
+            t = Task({'filename': filename})
+            queue = Queue('incoming_files')
+            queue.connect()
+            queue.enqueue(t)
             return "Log uploaded."
 
     return '''
