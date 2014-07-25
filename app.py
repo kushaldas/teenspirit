@@ -34,7 +34,7 @@ def upload_file():
             queue = Queue('incoming_files')
             queue.connect()
             queue.enqueue(t)
-            return "Log uploaded."
+            return "Log uploaded successfully."
 
     return '''
     <!doctype html>
